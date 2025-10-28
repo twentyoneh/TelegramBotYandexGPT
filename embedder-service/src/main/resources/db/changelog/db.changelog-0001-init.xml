@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+          http://www.liquibase.org/xml/ns/dbchangelog
+          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd">
+
+    <!-- Создание схем -->
+    <changeSet id="0001-01-create-schemas" author="twentyoneh">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+        </preConditions>
+        <sql>
+            CREATE SCHEMA IF NOT EXISTS ds;
+            CREATE SCHEMA IF NOT EXISTS logging;
+        </sql>
+    </changeSet>
+
+    <!-- Расширение pgvector -->
+    <changeSet id="0001-02-create-extension-vector" author="twentyoneh" runInTransaction="false">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(1) FROM pg_extension WHERE extname = 'pgvector'
+            </sqlCheck>
+        </preConditions>
+        <sql>
+            CREATE EXTENSION IF NOT EXISTS pgvector;
+        </sql>
+    </changeSet>
+
+    <!-- Таблица ds.chunks_meta -->
+    <changeSet id="0001-03-create-table-chunks-meta" author="twentyoneh">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <not>
+                <tableExists tableName="chunks_meta" schemaName="ds"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE ds.chunks_meta(
+                                           chunk_meta_pk SERIAL PRIMARY KEY,
+                                           course_name TEXT,
+                                           section_name TEXT,
+                                           chunk_text TEXT NOT NULL,
+                                           url_doc TEXT,
+                                           tags TEXT[],
+                                           page_num INT
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE IF EXISTS ds.chunks_meta CASCADE;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- Таблица ds.chunk_vectors -->
+    <changeSet id="0001-04-create-table-chunk-vectors" author="twentyoneh">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <not>
+                <tableExists tableName="chunk_vectors" schemaName="ds"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE ds.chunk_vectors (
+                                              chunk_vectors_pk SERIAL PRIMARY KEY,
+                                              chunk_id INT NOT NULL REFERENCES ds.chunks_meta(chunk_meta_pk) ON DELETE CASCADE,
+                                              embedding VECTOR(256) NOT NULL,
+                                              UNIQUE (chunk_id)
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE IF EXISTS ds.chunk_vectors;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- Таблица logging.t_log -->
+    <changeSet id="0001-05-create-table-t-log" author="twentyoneh">
+        <preConditions onFail="MARK_RAN">
+            <dbms type="postgresql"/>
+            <not>
+                <tableExists tableName="t_log" schemaName="logging"/>
+            </not>
+        </preConditions>
+        <sql>
+            CREATE TABLE logging.t_log(
+                                          id_logs SERIAL PRIMARY KEY,
+                                          process_name TEXT NOT NULL,
+                                          start_time TIMESTAMPTZ,
+                                          end_time TIMESTAMPTZ,
+                                          status VARCHAR(10) NOT NULL CHECK (status IN ('SUCCESS','ERROR')),
+                                          log_message TEXT,
+                                          error_details TEXT
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE IF EXISTS logging.t_log;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

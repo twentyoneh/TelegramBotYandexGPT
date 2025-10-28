@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: embedder-service
+  datasource:
+    url: "jdbc:postgresql://rc1b-gk21kywyncnoym7q.mdb.yandexcloud.net:6432/cnrprod1757001647-team-87839"
+    username: ${DB_USER:cnrprod1757001647-team-87839}
+    password: ${DB_PASSWORD:eiSheeviengaifiichaiquahgu5ouViz}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    change-log: ./db/changelog/db.changelog-master.xml
+
+jwt:
+    secret: ${JWT_SECRET:1c42a23ec9150b75c230fc307b4b48b6ad2528e733381dc185fb9662b8613d4c}
+    expiration: 3600000  # 1 hour
+
+
+yandex:
+  gpt:
+    api-key: ${API_KEY}
+    folder-id: ${FOLDER_ID}
+    base-url: https://llm.api.cloud.yandex.net
+
+server:
+  port: 8082

@@ -1,0 +1,74 @@
+version: "3.9"
+
+name: spring-microservices-stack
+networks:
+  app-net:
+    driver: bridge
+
+services:
+  embedder-service:
+    build:
+      context: ./embedder-service
+      dockerfile: Dockerfile
+      args:
+        - JAR_FILE=${EMBEDDER_JAR_FILE:-target/*-SNAPSHOT.jar}
+    image: embedder-service:latest
+    container_name: embedder-service
+    ports:
+      - "${EMBEDDER_PORT:-8082}:8082"
+    environment:
+      # spring.datasource.* уже задан в application.yml,
+      # но логины/пароли удобнее держать в .env:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # Yandex GPT (из application.yml: yandex.gpt.*)
+      YANDEX_GPT_API_KEY: ${API_KEY}
+      YANDEX_GPT_FOLDER_ID: ${FOLDER_ID}
+      YANDEX_GPT_BASE_URL: ${YANDEX_GPT_BASE_URL:-https://llm.api.cloud.yandex.net}
+
+      # Явно фиксируем порт приложения
+      SERVER_PORT: 8082
+    networks: [app-net]
+    restart: unless-stopped
+
+  ai-orchestrator:
+    build:
+      context: ./ai-orchestrator
+      dockerfile: Dockerfile
+      args:
+        - JAR_FILE=${AI_ORCH_JAR_FILE:-target/*-SNAPSHOT.jar}
+    image: ai-orchestrator:latest
+    container_name: ai-orchestrator
+    ports:
+      - "${AI_ORCH_PORT:-8081}:8081"
+    environment:
+      # Переопределяем app.embedder.base-url c localhost -> embedder-service
+      APP_EMBEDDER_BASE_URL: http://embedder-service:8082
+
+      # Yandex GPT (указаны в application.yml как placeholders)
+      YANDEX_GPT_API_KEY: ${API_KEY:-put_api_key_here}
+      YANDEX_GPT_FOLDER_ID: ${FOLDER_ID:-put_folder_id_here}
+      YANDEX_GPT_BASE_URL: ${YANDEX_GPT_BASE_URL:-https://llm.api.cloud.yandex.net}
+
+      SERVER_PORT: 8081
+    networks: [app-net]
+    restart: unless-stopped
+
+  tg-bot-gateway:
+    build:
+      context: ./tg-bot-gateway
+      dockerfile: Dockerfile
+      args:
+        - JAR_FILE=${TG_BOT_JAR_FILE:-target/*-SNAPSHOT.jar}
+    image: tg-bot-gateway:latest
+    container_name: tg-bot-gateway
+    ports:
+      - "${TG_BOT_PORT:-8080}:8080"
+    environment:
+      # Переопределяем app.chat.base-url c localhost -> ai-orchestrator
+      APP_CHAT_BASE_URL: http://ai-orchestrator:8081
+
+      SERVER_PORT: 8080
+    networks: [app-net]
+    restart: unless-stopped

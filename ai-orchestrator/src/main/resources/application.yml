@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: ai-orchestrator
+  jpa:
+    properties:
+      hibernate:
+        default_schema: ds
+yandex:
+  gpt:
+    api-key: ${API_KEY}
+    folder-id: ${FOLDER_ID}
+    base-url: https://llm.api.cloud.yandex.net
+  security:
+    user:
+      name: admin
+      password: admin
+
+app:
+  embedder:
+    base-url: http://localhost:8082
+    auth:
+      login-path: /auth/login
+      username: admin
+      password: admin
+      cache-seconds: 3600000
+
+server:
+  port: 8081

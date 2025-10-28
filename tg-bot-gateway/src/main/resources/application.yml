@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: tg-bot-gateway
+
+server:
+  port: 8080
+
+app:
+  chat:
+    base-url: http://localhost:8081
+
+bot:
+  name: localdev123323213bot
+  token: 8479284050:AAGBz5YCBXEeO8la1aCkAj9XBqIPLonqpXo
